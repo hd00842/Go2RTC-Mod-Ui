@@ -11,9 +11,23 @@ go2rtc là server stream camera hiệu năng cao, hỗ trợ RTSP, RTMP, WebRTC,
 - Toàn bộ mật khẩu được mã hóa trong một file duy nhất; muốn xem phải có tài khoản admin.
 - Bắt buộc đăng nhập (trang đăng nhập riêng + phiên cookie) với mọi truy cập web và API.
 
-## 2. Tính năng nổi bật
+## 2. Ảnh chụp giao diện (Screenshots)
 
-### 2.1. Bảo mật truy cập
+### 2.1. Trang chủ — cổng truy cập nhanh
+
+![Trang chủ go2rtc NVR](screenshots/01-home.png)
+
+### 2.2. Màn hình NVR — xem nhiều camera cùng lúc
+
+![Màn hình NVR — lưới 3x2, kéo thả camera vào ô](screenshots/02-nvr-dashboard.png)
+
+### 2.3. Trang cấu hình — quản lý camera, mật khẩu được che
+
+![Trang cấu hình camera](screenshots/03-config.png)
+
+## 3. Tính năng nổi bật
+
+### 3.1. Bảo mật truy cập
 - Trang đăng nhập tùy biến (tài khoản + mật khẩu) cho toàn bộ hệ thống web.
 - Phiên đăng nhập duy trì bằng cookie `go2rtc_session` (HttpOnly, SameSite=Lax, tự hết hạn sau 12 giờ).
 - HTTP Basic Auth vẫn hoạt động song song cho client API (curl, Home Assistant...).
@@ -21,21 +35,21 @@ go2rtc là server stream camera hiệu năng cao, hỗ trợ RTSP, RTMP, WebRTC,
 - Nút Logout ở màn hình NVR và màn hình Config.
 - Đổi mật khẩu admin ngay trên giao diện; hệ thống tự khởi động lại để áp dụng.
 
-### 2.2. Kho mật khẩu mã hóa (Secrets Vault)
+### 3.2. Kho mật khẩu mã hóa (Secrets Vault)
 - Mọi mật khẩu (camera + admin) nằm trong một file `config/secrets.yaml`, mã hóa AES-256-GCM.
 - Khóa giải mã đặt tại `config/secrets.key` (quyền 0600).
 - `config/go2rtc.yaml` không chứa mật khẩu thật — chỉ còn tham chiếu dạng `${PASS_...}`.
 - Lần khởi động đầu tiên, mật khẩu plaintext trong config cũ được tự động migrate vào vault.
 - Xem mật khẩu: chỉ khi đã đăng nhập admin (qua UI hoặc API `reveal=1`).
 
-### 2.3. UI cấu hình thân thiện
+### 3.3. UI cấu hình thân thiện
 - Thêm camera: chọn protocol (RTSP/RTMP/HTTP/ONVIF/FFmpeg/file/exec), nhập host, port, stream path, user, password.
 - Stream path được giữ nguyên khi đổi protocol (kể cả `?subtype=...` của ONVIF).
 - Mật khẩu luôn hiển thị dạng dấu chấm; bấm vào để xem tạm thời 5 giây.
 - Ký tự đặc biệt trong mật khẩu (@, :) được xử lý đúng, không còn lỗi URL-encode.
 - Chế độ Raw YAML cho người dùng nâng cao.
 
-## 3. Cấu trúc thư mục
+## 4. Cấu trúc thư mục
 
 ```
 go2rtc-master/
@@ -61,20 +75,20 @@ go2rtc-master/
     └── ...
 ```
 
-## 4. Cài đặt bằng Docker
+## 5. Cài đặt bằng Docker
 
-### 4.1. Yêu cầu
+### 5.1. Yêu cầu
 - Docker Desktop (macOS/Windows) hoặc Docker Engine (Linux).
 - Các camera cùng mạng LAN với máy chạy Docker.
 
-### 4.2. Build image
+### 5.2. Build image
 ```bash
 cd /path/to/go2rtc-master
 docker build -t go2rtc:local -f docker/Dockerfile .
 ```
 Build gồm 2 giai đoạn: compile binary go2rtc (golang:1.25-alpine), sau đó đóng gói vào python:3.13-alpine kèm ffmpeg, tini.
 
-### 4.3. Chạy container
+### 5.3. Chạy container
 ```bash
 docker run -d --name go2rtc --restart=unless-stopped \
   -p 1984:1984 \
@@ -92,15 +106,15 @@ Bảng port:
 | 8554 | RTSP server (re-stream cho đầu ghi/NVR khác) |
 | 8555 | WebRTC (TCP + UDP) |
 
-### 4.4. Lần đầu khởi động
+### 5.4. Lần đầu khởi động
 1. Mở `http://localhost:1984/` — trang đăng nhập hiện ra.
 2. Lấy tài khoản admin ban đầu trong file `config/admin_password.txt`:
    - username: admin
    - password: chuỗi 12 ký tự tự sinh
-3. Đăng nhập và đổi mật khẩu ngay (mục 6.3).
+3. Đăng nhập và đổi mật khẩu ngay (mục 7.3).
 4. Mật khẩu plaintext cũ trong `go2rtc.yaml` (nếu có) được tự động chuyển vào vault và thay bằng tham chiếu `${...}`.
 
-### 4.5. Lệnh quản lý thường dùng
+### 5.5. Lệnh quản lý thường dùng
 ```bash
 docker ps --filter name=go2rtc          # xem trạng thái
 docker logs -f go2rtc                   # xem log trực tiếp
@@ -108,9 +122,9 @@ docker restart go2rtc                   # khởi động lại
 docker stop go2rtc && docker rm go2rtc  # xóa container (dữ liệu vẫn còn trong config/)
 ```
 
-## 5. Cấu hình
+## 6. Cấu hình
 
-### 5.1. File config chính `config/go2rtc.yaml`
+### 6.1. File config chính `config/go2rtc.yaml`
 Ví dụ sau khi đã migrate bảo mật:
 ```yaml
 api:
@@ -125,7 +139,7 @@ streams:
 - Không tự tay ghi mật khẩu plaintext vào đây — hãy dùng UI config hoặc API secrets để mật khẩu được mã hóa đúng cách.
 - Mục `api`: `username` / `password` là tài khoản đăng nhập web; `local_auth: true` bắt buộc xác thực cả từ localhost.
 
-### 5.2. Secrets Vault (kho mật khẩu mã hóa)
+### 6.2. Secrets Vault (kho mật khẩu mã hóa)
 
 | File | Vai trò | Quyền |
 |---|---|---|
@@ -155,14 +169,14 @@ Sao lưu & khôi phục:
 - Copy cả `secrets.yaml` + `secrets.key` là đủ khôi phục toàn bộ mật khẩu.
 - Mất `secrets.key`: không thể giải mã mật khẩu cũ; xóa cả 2 file rồi khởi động lại để tạo vault mới (phải nhập lại mật khẩu camera).
 
-## 6. Hướng dẫn sử dụng giao diện web
+## 7. Hướng dẫn sử dụng giao diện web
 
-### 6.1. Đăng nhập
+### 7.1. Đăng nhập
 - Truy cập bất kỳ địa chỉ nào (`/`, `/nvr.html`, `/config.html`...) khi chưa đăng nhập đều hiện trang đăng nhập.
 - Nhập sai tài khoản/mật khẩu: quay lại trang đăng nhập kèm thông báo "Sai tài khoản hoặc mật khẩu".
 - Phiên đăng nhập giữ 12 giờ nhờ cookie HttpOnly; hết phiên phải đăng nhập lại.
 
-### 6.2. Các màn hình chính
+### 7.2. Các màn hình chính
 
 | Màn hình | Địa chỉ | Công dụng |
 |---|---|---|
@@ -171,18 +185,18 @@ Sao lưu & khôi phục:
 | Config | `/config.html` | Quản lý camera, cấu hình chung, Raw YAML, đổi mật khẩu, logout |
 | Đăng nhập | tự hiện khi chưa auth | Form tài khoản / mật khẩu |
 
-### 6.3. Đổi mật khẩu admin
+### 7.3. Đổi mật khẩu admin
 1. Vào `config.html` -> bấm nút **🔑 Password** trên thanh công cụ.
 2. Nhập mật khẩu mới (tối thiểu 8 ký tự) và nhập lại để xác nhận.
 3. Bấm **Change Password**: hệ thống ghi mật khẩu mới vào vault, cập nhật `admin_password.txt` và tự khởi động lại dịch vụ (khoảng 3-4 giây).
 4. Đăng nhập lại bằng mật khẩu mới. Mọi phiên cũ bị hủy sau khi restart.
 
-### 6.4. Logout
+### 7.4. Logout
 - `nvr.html`: nút icon cửa thoát ở góc phải thanh header.
 - `config.html`: nút **🚪 Logout** trên thanh công cụ.
 - Logout xóa cookie phiên ngay lập tức và đưa về trang đăng nhập.
 
-### 6.5. Thêm / sửa camera
+### 7.5. Thêm / sửa camera
 1. `config.html` -> **Add Camera**.
 2. Điền: tên camera, protocol, host/IP, port, stream path, username, password.
    - ONVIF: stream path dạng `?subtype=MediaProfile00200`; giá trị path được giữ nguyên khi đổi protocol.
@@ -192,7 +206,7 @@ Sao lưu & khôi phục:
 5. Xem lại mật khẩu camera: bấm dòng `••••••••` trên card camera (hiện 5 giây rồi tự ẩn).
 6. Xóa camera: nút **Delete** trên card, có hộp thoại xác nhận.
 
-## 7. Tham khảo HTTP API
+## 8. Tham khảo HTTP API
 
 Mọi API đều yêu cầu xác thực: cookie phiên (trình duyệt) hoặc Basic Auth (client).
 
@@ -223,7 +237,7 @@ curl -b jar.txt 'http://localhost:1984/api/secrets?name=PASS_S_N_T4&reveal=1'
 curl -u admin:MATKHAU http://localhost:1984/api/secrets
 ```
 
-## 8. Lưu ý bảo mật
+## 9. Lưu ý bảo mật
 
 1. **Bảo vệ 3 file sống còn**: `secrets.key`, `secrets.yaml`, `admin_password.txt` (đều quyền 0600). Ai nắm cả `secrets.key` + `secrets.yaml` sẽ giải mã được toàn bộ mật khẩu.
 2. **Đổi mật khẩu admin mặc định ngay sau lần đăng nhập đầu tiên.**
@@ -234,7 +248,7 @@ curl -u admin:MATKHAU http://localhost:1984/api/secrets
 7. API secrets chỉ trả plaintext khi có `reveal=1` kèm phiên admin hợp lệ; không cho xóa mật khẩu admin (403).
 8. Không commit thư mục `config/` lên git (chứa khóa và bản mã).
 
-## 9. Phát triển & build lại
+## 10. Phát triển & build lại
 
 - Giao diện web trong `www/` được nhúng vào binary bằng `go:embed` => mỗi lần sửa `www/*.html, *.js, *.css` BẮT BUỘC build lại image:
 ```bash
@@ -252,7 +266,7 @@ docker run -d --name go2rtc --restart=unless-stopped \
 - Kiểm tra nhanh cú pháp JS của config.html: tách phần trong cặp thẻ script rồi chạy `node --check`.
 - Sau khi restart container, nhớ refresh cứng trình duyệt (Cmd+Shift+R) để bỏ cache trang cũ.
 
-## 10. Câu hỏi thường gặp (FAQ)
+## 11. Câu hỏi thường gặp (FAQ)
 
 **Q: Quên mật khẩu admin thì làm sao?**
 A: Mở file `config/admin_password.txt` — file này luôn được cập nhật mỗi lần đổi mật khẩu. Nếu mất file: dùng `secrets.key` để giải mã `secrets.yaml` offline; cách cuối cùng là xóa cả `secrets.yaml` + `secrets.key` rồi khởi động lại (hệ thống tạo vault và tài khoản admin mới, phải nhập lại mật khẩu camera).
@@ -275,6 +289,6 @@ A: Đã sửa — UI không còn encode sai. Camera cũ lưu dạng `%40` thì m
 **Q: Muốn xem lại mật khẩu một camera?**
 A: Đăng nhập admin, vào `config.html`, bấm dòng `••••••••` trên card camera; hoặc gọi API `GET /api/secrets?name=TEN&reveal=1`.
 
-## 11. Giấy phép
+## 12. Giấy phép
 
 Mã nguồn gốc go2rtc phát hành theo giấy phép MIT. Bản tùy biến này kế thừa giấy phép đó cho phần mã nguồn mở; các phần bổ sung bảo mật (vault, login, UI) phục vụ sử dụng cá nhân.
