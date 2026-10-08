@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Đăng nhập — go2rtc</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f1117; color: #e2e8f0; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.box { width: 100%; max-width: 380px; background: #1a1d27; border: 1px solid #2d3243; border-radius: 12px; padding: 32px 28px; box-shadow: 0 20px 60px rgba(0,0,0,.5); }
+h1 { font-size: 22px; text-align: center; margin-bottom: 6px; }
+h1 span { color: #3b82f6; }
+.sub { color: #64748b; font-size: 13px; text-align: center; margin-bottom: 24px; }
+label { display: block; font-size: 12px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
+input { width: 100%; padding: 11px 14px; background: #242836; border: 1px solid #2d3243; border-radius: 6px; color: #e2e8f0; font-size: 14px; margin-bottom: 16px; }
+input:focus { outline: none; border-color: #3b82f6; }
+button { width: 100%; padding: 12px; background: #3b82f6; border: none; border-radius: 6px; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; }
+button:hover { background: #2563eb; }
+.err { background: rgba(239,68,68,.12); border: 1px solid rgba(239,68,68,.4); color: #f87171; font-size: 13px; border-radius: 6px; padding: 10px 12px; margin-bottom: 16px; }
+</style>
+</head>
+<body>
+<form class="box" method="POST" action="api/login">
+  <h1>🔐 go<span>2rtc</span></h1>
+  <p class="sub">Đăng nhập để truy cập hệ thống camera</p>
+  <div class="err" id="err" hidden>Sai tài khoản hoặc mật khẩu.</div>
+  <label for="username">Tài khoản</label>
+  <input id="username" name="username" autocomplete="username" autofocus required>
+  <label for="password">Mật khẩu</label>
+  <input id="password" name="password" type="password" autocomplete="current-password" required>
+  <button type="submit">Đăng nhập</button>
+</form>
+<script>
+if (new URLSearchParams(location.search).get('login') === 'failed') document.getElementById('err').hidden = false;
+</script>
+</body>
+</html>

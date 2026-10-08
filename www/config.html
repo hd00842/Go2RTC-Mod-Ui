@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Configuration - go2rtc</title>
+<script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0f1117;
+  --bg-card: #1a1d27;
+  --bg-elev: #242836;
+  --bg-hover: #2d3243;
+  --border: #2d3243;
+  --border-focus: #3b82f6;
+  --text: #e2e8f0;
+  --text-dim: #94a3b8;
+  --text-muted: #64748b;
+  --accent: #3b82f6;
+  --accent-h: #2563eb;
+  --ok: #22c55e;
+  --warn: #f59e0b;
+  --err: #ef4444;
+  --radius: 10px;
+}
+html, body { height: 100%; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+/* ── Top Nav ── */
+.topbar {
+  height: 56px; background: var(--bg-card); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; padding: 0 20px; gap: 16px;
+  position: sticky; top: 0; z-index: 100;
+}
+.topbar h1 { font-size: 17px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.topbar h1 span { color: var(--accent); font-weight: 500; }
+.topbar-actions { margin-left: auto; display: flex; gap: 8px; }
+
+/* ── Buttons ── */
+.btn {
+  padding: 8px 16px; border: 1px solid var(--border); background: var(--bg-elev);
+  color: var(--text); border-radius: 6px; font-size: 13px; font-weight: 500;
+  cursor: pointer; transition: all .15s; display: inline-flex; align-items: center; gap: 6px;
+}
+.btn:hover { background: var(--bg-hover); border-color: var(--accent); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn.primary:hover { background: var(--accent-h); }
+.btn.danger { color: var(--err); }
+.btn.danger:hover { background: rgba(239,68,68,0.1); border-color: var(--err); }
+.btn.sm { padding: 5px 10px; font-size: 12px; }
+.btn svg { width: 15px; height: 15px; }
+
+/* ── Tab Bar ── */
+.tab-bar {
+  display: flex; padding: 0 20px; background: var(--bg-card); border-bottom: 1px solid var(--border); gap: 0;
+}
+.tab-btn {
+  padding: 14px 22px; background: transparent; border: none; border-bottom: 2px solid transparent;
+  color: var(--text-dim); font-size: 13px; font-weight: 600; cursor: pointer; transition: all .15s;
+}
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* ── Content ── */
+.content { padding: 24px 20px; max-width: 1200px; margin: 0 auto; }
+.section-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px;
+}
+.section-title { font-size: 15px; font-weight: 700; color: var(--text); }
+.section-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+/* ── Camera Cards ── */
+.camera-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px;
+}
+.cam-card {
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+  overflow: hidden; transition: all .15s;
+}
+.cam-card:hover { border-color: var(--bg-hover); }
+.cam-card-head {
+  padding: 14px 16px; display: flex; align-items: center; gap: 10px;
+  border-bottom: 1px solid var(--border);
+}
+.cam-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); flex-shrink: 0; }
+.cam-dot.online { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
+.cam-dot.offline { background: var(--err); }
+.cam-name { font-weight: 600; font-size: 14px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cam-proto {
+  font-size: 10px; padding: 2px 8px; background: rgba(59,130,246,0.15); color: #93c5fd;
+  border-radius: 10px; font-weight: 700; text-transform: uppercase;
+}
+.cam-card-body { padding: 14px 16px; font-size: 13px; }
+.cam-row { display: flex; justify-content: space-between; padding: 4px 0; }
+.cam-label { color: var(--text-muted); font-size: 12px; }
+.cam-value { color: var(--text); font-family: 'SF Mono', Consolas, monospace; font-size: 12px; }
+.cam-pwd { letter-spacing: 2px; color: var(--text-muted); user-select: none; }
+.cam-pwd.revealed { letter-spacing: normal; color: var(--warn); }
+.cam-card-foot {
+  padding: 10px 16px; border-top: 1px solid var(--border);
+  display: flex; gap: 8px; justify-content: flex-end;
+}
+
+/* ── Empty state ── */
+.empty-state {
+  text-align: center; padding: 60px 20px; color: var(--text-muted);
+}
+.empty-state svg { width: 64px; height: 64px; opacity: .3; margin-bottom: 14px; }
+.empty-state p { font-size: 14px; margin-bottom: 16px; }
+
+
+/* ── Modal ── */
+.modal-overlay {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.6); z-index: 200;
+  display: none; align-items: center; justify-content: center;
+  backdrop-filter: blur(4px);
+}
+.modal-overlay.active { display: flex; }
+.modal {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 12px; width: 90%; max-width: 520px;
+  max-height: 85vh; overflow-y: auto;
+}
+.modal-head {
+  padding: 18px 20px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.modal-head h2 { font-size: 16px; font-weight: 700; }
+.modal-close {
+  width: 32px; height: 32px; background: transparent; border: none;
+  color: var(--text-dim); cursor: pointer; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+}
+.modal-close:hover { background: var(--bg-hover); color: var(--text); }
+.modal-body { padding: 20px; }
+.modal-foot {
+  padding: 14px 20px; border-top: 1px solid var(--border);
+  display: flex; gap: 8px; justify-content: flex-end;
+}
+
+/* ── Form ── */
+.form-group { margin-bottom: 16px; }
+.form-label {
+  display: block; font-size: 12px; font-weight: 600; color: var(--text-dim);
+  margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;
+}
+.form-input {
+  width: 100%; padding: 10px 14px; background: var(--bg-elev);
+  border: 1px solid var(--border); border-radius: 6px;
+  color: var(--text); font-size: 14px; transition: all .15s;
+}
+.form-input:focus { outline: none; border-color: var(--border-focus); }
+.form-input::placeholder { color: var(--text-muted); }
+.form-hint { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+/* ── Password field ── */
+.pwd-field {
+  position: relative; display: flex; align-items: center;
+}
+.pwd-field .form-input { padding-right: 44px; }
+.pwd-toggle {
+  position: absolute; right: 8px; width: 32px; height: 32px;
+  background: transparent; border: none; color: var(--text-muted);
+  cursor: pointer; border-radius: 4px; display: flex;
+  align-items: center; justify-content: center;
+}
+.pwd-toggle:hover { color: var(--text); background: var(--bg-hover); }
+.pwd-toggle svg { width: 16px; height: 16px; }
+
+/* ── Select ── */
+.form-select {
+  width: 100%; padding: 10px 14px; background: var(--bg-elev);
+  border: 1px solid var(--border); border-radius: 6px;
+  color: var(--text); font-size: 14px; cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 12px center;
+}
+
+/* ── Tab content ── */
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* ── Raw YAML editor (hidden by default) ── */
+.yaml-editor {
+  width: 100%; min-height: 300px; padding: 16px;
+  background: var(--bg-elev); border: 1px solid var(--border);
+  border-radius: 8px; color: var(--text); font-family: 'SF Mono', Consolas, monospace;
+  font-size: 13px; line-height: 1.6; resize: vertical;
+}
+.yaml-editor:focus { outline: none; border-color: var(--border-focus); }
+
+/* ── Toast ── */
+.toast {
+  position: fixed; bottom: 24px; right: 24px; padding: 12px 20px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 8px; color: var(--text); font-size: 13px;
+  z-index: 300; animation: toastIn .3s ease;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+}
+.toast.ok { border-color: var(--ok); }
+.toast.err { border-color: var(--err); }
+@keyframes toastIn { from { transform: translateY(20px); opacity: 0; } }
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+  .camera-grid { grid-template-columns: 1fr; }
+  .form-row { grid-template-columns: 1fr; }
+  .content { padding: 16px 12px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ══ TOPBAR ══ -->
+<div class="topbar">
+  <a href="index.html" class="btn sm" style="text-decoration:none;">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    Back
+  </a>
+  <h1>⚙️ Configuration <span>go2rtc</span></h1>
+  <div class="topbar-actions">
+    <button class="btn" id="btn-chpass" title="Change admin password">🔑 Password</button>
+    <button class="btn danger" id="btn-logout" title="Logout">🚪 Logout</button>
+    <button class="btn" id="btn-raw" title="Advanced: Edit raw YAML">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 18l6-6-6-6M8 6l-6 6 6 6"/></svg>
+      Raw YAML
+    </button>
+    <button class="btn primary" id="btn-save">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+      Save & Restart
+    </button>
+  </div>
+</div>
+
+<!-- ══ TAB BAR ══ -->
+<div class="tab-bar">
+  <button class="tab-btn active" data-tab="cameras">📹 Cameras</button>
+  <button class="tab-btn" data-tab="general">🔧 General</button>
+  <button class="tab-btn" data-tab="advanced">⚡ Advanced</button>
+</div>
+
+<!-- ══ CONTENT ══ -->
+<div class="content">
+
+  <!-- ══ CAMERAS TAB ══ -->
+  <div class="tab-content active" id="tab-cameras">
+    <div class="section-header">
+      <div>
+        <div class="section-title">Camera Streams</div>
+        <div class="section-sub">Manage your camera sources. Passwords are hidden by default.</div>
+      </div>
+      <button class="btn primary" id="btn-add-cam">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add Camera
+      </button>
+    </div>
+    <div id="camera-grid" class="camera-grid"></div>
+    <div id="empty-cams" class="empty-state" style="display:none;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
+        <circle cx="12" cy="13" r="4"/>
+      </svg>
+      <p>No cameras configured yet</p>
+      <button class="btn primary" onclick="document.getElementById('btn-add-cam').click()">Add your first camera</button>
+    </div>
+  </div>
+
+  <!-- ══ GENERAL TAB ══ -->
+  <div class="tab-content" id="tab-general">
+    <div class="section-header">
+      <div>
+        <div class="section-title">General Settings</div>
+        <div class="section-sub">Server-wide configuration</div>
+      </div>
+    </div>
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:20px;">
+      <div class="form-group">
+        <label class="form-label">API Listen Address</label>
+        <input class="form-input" id="cfg-api-listen" placeholder=":1984" />
+        <div class="form-hint">Default: :1984. Use :port or host:port format.</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">RTSP Listen Address</label>
+        <input class="form-input" id="cfg-rtsp-listen" placeholder=":8554" />
+        <div class="form-hint">Default: :8554</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">WebRTC Listen Address</label>
+        <input class="form-input" id="cfg-webrtc-listen" placeholder=":8555" />
+        <div class="form-hint">Default: :8555</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ ADVANCED TAB ══ -->
+  <div class="tab-content" id="tab-advanced">
+    <div class="section-header">
+      <div>
+        <div class="section-title">Raw Configuration</div>
+        <div class="section-sub">Edit go2rtc.yaml directly. Passwords visible here — use with care.</div>
+      </div>
+    </div>
+    <textarea class="yaml-editor" id="raw-yaml" spellcheck="false"></textarea>
+  </div>
+
+</div>
+
+
+<!-- ══ ADD/EDIT CAMERA MODAL ══ -->
+<div class="modal-overlay" id="cam-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <h2 id="modal-title">Add Camera</h2>
+      <button class="modal-close" id="modal-close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Camera Name</label>
+        <input class="form-input" id="cam-name" placeholder="e.g. Front Door, Garage" autocomplete="off" />
+        <div class="form-hint">Unique identifier for this camera</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Protocol</label>
+        <select class="form-select" id="cam-protocol">
+          <option value="rtsp">RTSP (most cameras)</option>
+          <option value="rtmp">RTMP</option>
+          <option value="http">HTTP / HLS</option>
+          <option value="onvif">ONVIF Discovery</option>
+          <option value="ffmpeg">FFmpeg Custom</option>
+          <option value="file">Local File</option>
+          <option value="exec">Command</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Host / IP</label>
+          <input class="form-input" id="cam-host" placeholder="192.168.1.100" autocomplete="off" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Port</label>
+          <input class="form-input" id="cam-port" placeholder="554" type="number" autocomplete="off" />
+        </div>
+      </div>
+      <div class="form-group" id="path-group">
+        <label class="form-label">Stream Path</label>
+        <input class="form-input" id="cam-path" placeholder="/stream1 or /h264/ch1/main/av_stream" autocomplete="off" />
+        <div class="form-hint">RTSP path after host:port</div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Username</label>
+          <input class="form-input" id="cam-user" placeholder="admin" autocomplete="off" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <div class="pwd-field">
+            <input class="form-input" id="cam-pass" type="password" placeholder="••••••••" autocomplete="new-password" />
+            <button type="button" class="pwd-toggle" id="pwd-toggle-modal" tabindex="-1">
+              <svg id="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>
+          <div class="form-hint">Stored securely — never exposed in UI</div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Full URL (auto-generated)</label>
+        <input class="form-input" id="cam-url" readonly style="opacity:0.7;cursor:default;" placeholder="rtsp://user:***@host:port/path" />
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" id="modal-cancel">Cancel</button>
+      <button class="btn primary" id="modal-save">Save Camera</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ CONFIRM DELETE MODAL ══ -->
+<div class="modal-overlay" id="del-modal">
+  <div class="modal" style="max-width:400px;">
+    <div class="modal-head">
+      <h2>Delete Camera</h2>
+      <button class="modal-close" id="del-close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <p style="color:var(--text-dim);font-size:14px;">Are you sure you want to delete <strong id="del-name" style="color:var(--text);"></strong>?</p>
+      <p style="color:var(--text-muted);font-size:12px;margin-top:8px;">This action cannot be undone.</p>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" id="del-cancel">Cancel</button>
+      <button class="btn danger" id="del-confirm">Delete</button>
+    </div>
+  </div>
+</div>
+<!-- ══ CHANGE ADMIN PASSWORD MODAL ══ -->
+<div class="modal-overlay" id="pw-modal">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-head">
+      <h2>🔑 Change Admin Password</h2>
+      <button class="modal-close" id="pw-close">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">New Password</label>
+        <input class="form-input" id="pw-new" type="password" autocomplete="new-password" placeholder="Minimum 8 characters" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Confirm New Password</label>
+        <input class="form-input" id="pw-confirm" type="password" autocomplete="new-password" placeholder="Re-enter new password" />
+      </div>
+      <div class="form-hint">The service restarts after changing. You will need to log in again with the new password.</div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" id="pw-cancel">Cancel</button>
+      <button class="btn primary" id="pw-save">Change Password</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// CONFIG DASHBOARD - State Management
+// ═══════════════════════════════════════════════════════════
+const CONFIG = {
+  raw: '',          // Original YAML string from server
+  parsed: {},       // Parsed YAML object
+  cameras: [],      // Extracted camera list: [{name, url, protocol, host, port, path, user}]
+  editingIndex: -1, // -1 = adding new, >=0 = editing existing
+  deletingIndex: -1,
+};
+
+// ═══════════════════════════════════════════════════════════
+// API
+// ═══════════════════════════════════════════════════════════
+async function loadConfig() {
+  try {
+    const r = await fetch('api/config', { cache: 'no-cache' });
+    const text = await r.text();
+    CONFIG.raw = text;
+    if (text.trim()) {
+      CONFIG.parsed = jsyaml.load(text) || {};
+    } else {
+      CONFIG.parsed = {};
+    }
+    extractCameras();
+    renderAll();
+  } catch (e) {
+    console.error('Failed to load config:', e);
+    showToast('Failed to load configuration', 'err');
+  }
+}
+
+async function saveConfig() {
+  try {
+    // Rebuild YAML from parsed object
+    const yaml = jsyaml.dump(CONFIG.parsed, { lineWidth: -1 });
+    const r = await fetch('api/config', { method: 'POST', body: yaml });
+    if (!r.ok) throw new Error('Save failed');
+    CONFIG.raw = yaml;
+    await fetch('api/restart', { method: 'POST' });
+    showToast('Configuration saved & restarting...', 'ok');
+    setTimeout(loadConfig, 3000);
+  } catch (e) {
+    showToast('Failed to save: ' + e.message, 'err');
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// CAMERA EXTRACTION & MASKING
+// ═══════════════════════════════════════════════════════════
+function extractCameras() {
+  CONFIG.cameras = [];
+  const streams = CONFIG.parsed.streams || {};
+  for (const [name, value] of Object.entries(streams)) {
+    let url = '';
+    if (typeof value === 'string') {
+      url = value;
+    } else if (typeof value === 'object' && value !== null) {
+      // Could be an object with source field
+      url = value.source || value.url || '';
+    }
+    const cam = parseUrl(name, url);
+    CONFIG.cameras.push(cam);
+  }
+}
+
+function parseUrl(name, url) {
+  const cam = { name, url, protocol: '', host: '', port: '', path: '', user: '', pass: '' };
+  if (!url) return cam;
+  
+  try {
+    // Handle various URL formats
+    let parsed;
+    if (url.startsWith('rtsp://') || url.startsWith('rtmp://') || url.startsWith('http://') || url.startsWith('https://') || url.startsWith('onvif://')) {
+      parsed = new URL(url);
+      cam.protocol = parsed.protocol.replace(':', '');
+      cam.host = parsed.hostname;
+      cam.port = parsed.port || getDefaultPort(cam.protocol);
+      cam.path = parsed.pathname + parsed.search;
+      if (parsed.username) cam.user = decodeURIComponent(parsed.username);
+      if (parsed.password) cam.pass = decodeURIComponent(parsed.password);
+    } else if (url.startsWith('ffmpeg:') || url.startsWith('exec:') || url.startsWith('file:')) {
+      const colonIdx = url.indexOf(':');
+      cam.protocol = url.substring(0, colonIdx);
+      cam.host = url.substring(colonIdx + 1).trim();
+    } else {
+      cam.protocol = 'custom';
+      cam.host = url;
+    }
+  } catch (e) {
+    cam.protocol = 'custom';
+    cam.host = url;
+  }
+  return cam;
+}
+
+function getDefaultPort(protocol) {
+  switch (protocol) {
+    case 'rtsp': return '554';
+    case 'rtmp': return '1935';
+    case 'http': return '80';
+    case 'https': return '443';
+    default: return '';
+  }
+}
+
+function maskPassword(url) {
+  if (!url) return '';
+  try {
+    const u = new URL(url);
+    if (u.password) {
+      u.password = '••••••••';
+      return u.toString();
+    }
+  } catch (e) {
+    // Try regex fallback for malformed URLs
+    return url.replace(/:([^@]+)@/, ':••••••••@');
+  }
+  return url;
+}
+
+// ═══════════════════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════════════════
+// ═══ SECRETS VAULT (encrypted at rest, admin-only reveal) ═══
+function isSecretRef(v) { return typeof v === 'string' && v.startsWith('${') && v.endsWith('}'); }
+function secretNameFromRef(v) { return v.slice(2, -1); }
+function refForCamera(name) {
+const base = 'PASS_' + String(name).toUpperCase().replace(/[^A-Z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+return base === 'PASS_' ? 'PASS_CAM' : base;
+}
+async function storeSecret(name, value) {
+const r = await fetch('api/secrets', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: name, value: value }) });
+if (!r.ok) throw new Error('HTTP ' + r.status);
+const j = await r.json();
+return j.ref;
+}
+async function revealSecret(name) {
+const r = await fetch('api/secrets?name=' + encodeURIComponent(name) + '&reveal=1');
+if (!r.ok) throw new Error('HTTP ' + r.status);
+const j = await r.json();
+return j.value;
+}
+function renderAll() {
+  renderCameraGrid();
+  renderGeneralTab();
+  renderRawYaml();
+}
+
+function renderCameraGrid() {
+  const grid = document.getElementById('camera-grid');
+  const empty = document.getElementById('empty-cams');
+  
+  if (CONFIG.cameras.length === 0) {
+    grid.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  
+  empty.style.display = 'none';
+  grid.innerHTML = CONFIG.cameras.map((cam, idx) => renderCameraCard(cam, idx)).join('');
+  bindCameraCards();
+}
+
+function renderCameraCard(cam, idx) {
+  const hasPassword = !!cam.pass;
+  const maskedUrl = maskPassword(cam.url);
+  const protoClass = cam.protocol || 'custom';
+  
+  return `
+    <div class="cam-card" data-index="${idx}">
+      <div class="cam-card-head">
+        <div class="cam-dot ${cam.url ? 'online' : 'offline'}"></div>
+        <div class="cam-name">${cam.name}</div>
+        <span class="cam-proto">${cam.protocol || 'N/A'}</span>
+      </div>
+      <div class="cam-card-body">
+        <div class="cam-row">
+          <span class="cam-label">Host</span>
+          <span class="cam-value">${cam.host || '—'}</span>
+        </div>
+        <div class="cam-row">
+          <span class="cam-label">Port</span>
+          <span class="cam-value">${cam.port || '—'}</span>
+        </div>
+        <div class="cam-row">
+          <span class="cam-label">Path</span>
+          <span class="cam-value">${cam.path || '—'}</span>
+        </div>
+        ${cam.user ? `<div class="cam-row">
+          <span class="cam-label">Username</span>
+          <span class="cam-value">${cam.user}</span>
+        </div>` : ''}
+        <div class="cam-row">
+          <span class="cam-label">Password</span>
+          <span class="cam-value cam-pwd" data-index="${idx}">${hasPassword ? '••••••••' : '—'}</span>
+        </div>
+        <div class="cam-row">
+          <span class="cam-label">URL</span>
+          <span class="cam-value" style="word-break:break-all;max-width:200px;text-align:right;">${maskedUrl || '—'}</span>
+        </div>
+      </div>
+      <div class="cam-card-foot">
+        <button class="btn sm" data-action="edit" data-index="${idx}">✏️ Edit</button>
+        <button class="btn sm danger" data-action="delete" data-index="${idx}">🗑 Delete</button>
+      </div>
+    </div>`;
+}
+
+function renderGeneralTab() {
+  const api = CONFIG.parsed.api || {};
+  const rtsp = CONFIG.parsed.rtsp || {};
+  const webrtc = CONFIG.parsed.webrtc || {};
+  
+  document.getElementById('cfg-api-listen').value = api.listen || ':1984';
+  document.getElementById('cfg-rtsp-listen').value = rtsp.listen || ':8554';
+  document.getElementById('cfg-webrtc-listen').value = webrtc.listen || ':8555';
+}
+
+function renderRawYaml() {
+  document.getElementById('raw-yaml').value = CONFIG.raw || jsyaml.dump(CONFIG.parsed);
+}
+
+
+// ═══════════════════════════════════════════════════════════
+// EVENT BINDINGS
+// ═══════════════════════════════════════════════════════════
+function bindCameraCards() {
+  document.querySelectorAll('.cam-card-foot .btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const action = btn.dataset.action;
+      const idx = parseInt(btn.dataset.index);
+      if (action === 'edit') openEditModal(idx);
+      if (action === 'delete') openDeleteModal(idx);
+    });
+  });
+  
+  // Password reveal toggle on cards (temporary reveal only)
+  document.querySelectorAll('.cam-pwd').forEach(el => {
+    el.style.cursor = 'pointer';
+    el.title = 'Click to temporarily reveal';
+    el.addEventListener('click', async () => {
+      const idx = parseInt(el.dataset.index);
+      const cam = CONFIG.cameras[idx];
+      if (cam && cam.pass) {
+        let plain = cam.pass;
+if (isSecretRef(plain)) {
+try { plain = await revealSecret(secretNameFromRef(plain)); } catch (e) { showToast('Reveal requires admin login: ' + e.message, 'err'); return; }
+}
+el.classList.toggle('revealed');
+el.textContent = el.classList.contains('revealed') ? plain : '••••••••';
+        // Auto-hide after 5 seconds
+        if (el.classList.contains('revealed')) {
+          setTimeout(() => {
+            el.classList.remove('revealed');
+            el.textContent = '••••••••';
+          }, 5000);
+        }
+      }
+    });
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// MODAL - ADD/EDIT CAMERA
+// ═══════════════════════════════════════════════════════════
+function openAddModal() {
+  CONFIG.editingIndex = -1;
+  document.getElementById('modal-title').textContent = 'Add Camera';
+  document.getElementById('cam-name').value = '';
+  document.getElementById('cam-protocol').value = 'rtsp';
+  document.getElementById('cam-host').value = '';
+  document.getElementById('cam-port').value = '554';
+  document.getElementById('cam-path').value = '/stream1';
+  document.getElementById('cam-user').value = '';
+  const passElAdd = document.getElementById('cam-pass'); passElAdd.value = ''; passElAdd.dataset.ref = ''; passElAdd.placeholder = '••••••••';
+  document.getElementById('cam-url').value = '';
+  updateAutoUrl();
+  document.getElementById('cam-modal').classList.add('active');
+  document.getElementById('cam-name').focus();
+}
+
+function openEditModal(idx) {
+  CONFIG.editingIndex = idx;
+  const cam = CONFIG.cameras[idx];
+  document.getElementById('modal-title').textContent = 'Edit Camera: ' + cam.name;
+  document.getElementById('cam-name').value = cam.name;
+  document.getElementById('cam-protocol').value = cam.protocol || 'rtsp';
+  document.getElementById('cam-host').value = cam.host;
+  document.getElementById('cam-port').value = cam.port || '';
+  document.getElementById('cam-path').value = cam.path || '';
+  document.getElementById('cam-user').value = cam.user || '';
+  const passElEdit = document.getElementById('cam-pass');
+if (isSecretRef(cam.pass)) { passElEdit.value = ''; passElEdit.dataset.ref = cam.pass; passElEdit.placeholder = '•••••••• (encrypted in vault)'; }
+else { passElEdit.value = cam.pass || ''; passElEdit.dataset.ref = ''; }
+  updateAutoUrl();
+  document.getElementById('cam-modal').classList.add('active');
+}
+
+function closeCamModal() {
+  document.getElementById('cam-modal').classList.remove('active');
+  // Clear password field for security
+  document.getElementById('cam-pass').value = '';
+  document.getElementById('cam-pass').type = 'password';
+}
+
+async function saveCamFromModal() {
+  const name = document.getElementById('cam-name').value.trim();
+  if (!name) { showToast('Camera name is required', 'err'); return; }
+  
+  const protocol = document.getElementById('cam-protocol').value;
+  const host = document.getElementById('cam-host').value.trim();
+  const port = document.getElementById('cam-port').value.trim();
+  const path = document.getElementById('cam-path').value.trim();
+  const user = document.getElementById('cam-user').value.trim();
+  const passInputEl = document.getElementById('cam-pass');
+let pass = passInputEl.value || passInputEl.dataset.ref || '';
+if (pass && !isSecretRef(pass)) {
+try {
+pass = await storeSecret(refForCamera(name), pass);
+} catch (e) { showToast('Failed to encrypt password: ' + e.message, 'err'); return; }
+}
+  
+  // Build URL
+  let url = '';
+  if (['rtsp', 'rtmp', 'http', 'https'].includes(protocol)) {
+    const defaultPort = getDefaultPort(protocol);
+    const portStr = port && port !== defaultPort ? ':' + port : (port ? ':' + port : ':' + defaultPort);
+    url = protocol + '://';
+    if (user) {
+      url += user;
+      if (pass) url += ":" + pass;
+      url += '@';
+    }
+    url += host + portStr + (path.startsWith('/') ? path : '/' + path);
+  } else if (protocol === 'onvif') {
+    url = 'onvif://';
+    if (user) {
+      url += user;
+      if (pass) url += ":" + pass;
+      url += '@';
+    }
+    url += host + ':' + (port || '80');
+    // Keep stream path / query (e.g. ?subtype=MediaProfile00200) in the saved URL
+    if (path) url += (path.startsWith('/') || path.startsWith('?')) ? path : '/' + path;
+  } else {
+    url = protocol + ':' + host + (path ? ' ' + path : '');
+  }
+  
+  // Ensure streams object exists
+  if (!CONFIG.parsed.streams) CONFIG.parsed.streams = {};
+  
+  // Save to parsed config
+  if (CONFIG.editingIndex >= 0) {
+    // Editing existing - find the old name and remove it
+    const oldName = CONFIG.cameras[CONFIG.editingIndex].name;
+    delete CONFIG.parsed.streams[oldName];
+  }
+  CONFIG.parsed.streams[name] = url;
+  
+  closeCamModal();
+  saveConfig();
+}
+
+function updateAutoUrl() {
+  const protocol = document.getElementById('cam-protocol').value;
+  const host = document.getElementById('cam-host').value.trim();
+  const port = document.getElementById('cam-port').value.trim();
+  const path = document.getElementById('cam-path').value.trim();
+  const user = document.getElementById('cam-user').value.trim();
+  const passEl0 = document.getElementById('cam-pass');
+const hasPass = passEl0.value.length > 0 || !!passEl0.dataset.ref;
+  
+  let preview = '';
+  if (['rtsp', 'rtmp', 'http', 'https'].includes(protocol)) {
+    const defaultPort = getDefaultPort(protocol);
+    const portStr = port && port !== defaultPort ? ':' + port : (port ? ':' + port : ':' + defaultPort);
+    preview = protocol + '://';
+    if (user) {
+      preview += user;
+      if (hasPass) preview += ':••••••••';
+      preview += '@';
+    }
+    preview += host + portStr + (path.startsWith('/') ? path : '/' + path);
+  } else if (protocol === 'onvif') {
+    preview = 'onvif://';
+    if (user) {
+      preview += user;
+      if (hasPass) preview += ':••••••••';
+      preview += '@';
+    }
+    preview += host + ':' + (port || '80');
+    // Keep stream path / query (e.g. ?subtype=MediaProfile00200) in the URL
+    if (path) preview += (path.startsWith('/') || path.startsWith('?')) ? path : '/' + path;
+  } else {
+    preview = protocol + ':' + host + (path ? ' ' + path : '');
+  }
+  
+  document.getElementById('cam-url').value = preview || '';
+}
+
+// ═══════════════════════════════════════════════════════════
+// MODAL - DELETE
+// ═══════════════════════════════════════════════════════════
+function openDeleteModal(idx) {
+  CONFIG.deletingIndex = idx;
+  document.getElementById('del-name').textContent = CONFIG.cameras[idx].name;
+  document.getElementById('del-modal').classList.add('active');
+}
+
+function closeDeleteModal() {
+  document.getElementById('del-modal').classList.remove('active');
+  CONFIG.deletingIndex = -1;
+}
+
+function confirmDelete() {
+  if (CONFIG.deletingIndex < 0) return;
+  const name = CONFIG.cameras[CONFIG.deletingIndex].name;
+  if (CONFIG.parsed.streams) {
+    delete CONFIG.parsed.streams[name];
+  }
+  closeDeleteModal();
+  saveConfig();
+}
+
+// ═══════════════════════════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════════════════════════
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+}
+
+// ═══════════════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════════════
+function showToast(msg, type = 'info') {
+  const existing = document.querySelector('.toast');
+  if (existing) existing.remove();
+  const toast = document.createElement('div');
+  toast.className = 'toast ' + type;
+  toast.textContent = msg;
+  document.body.appendChild(toast);
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transition = 'opacity 0.3s';
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+
+// ═══════════════════════════════════════════════════════════
+// GENERAL TAB SAVE
+// ═══════════════════════════════════════════════════════════
+function readGeneralTab() {
+  if (!CONFIG.parsed.api) CONFIG.parsed.api = {};
+  if (!CONFIG.parsed.rtsp) CONFIG.parsed.rtsp = {};
+  if (!CONFIG.parsed.webrtc) CONFIG.parsed.webrtc = {};
+  
+  CONFIG.parsed.api.listen = document.getElementById('cfg-api-listen').value || ':1984';
+  CONFIG.parsed.rtsp.listen = document.getElementById('cfg-rtsp-listen').value || ':8554';
+  CONFIG.parsed.webrtc.listen = document.getElementById('cfg-webrtc-listen').value || ':8555';
+}
+
+// ═══════════════════════════════════════════════════════════
+// RAW YAML TAB
+// ═══════════════════════════════════════════════════════════
+function readRawYaml() {
+  try {
+    const yaml = document.getElementById('raw-yaml').value;
+    CONFIG.parsed = jsyaml.load(yaml) || {};
+    CONFIG.raw = yaml;
+    extractCameras();
+    renderCameraGrid();
+    renderGeneralTab();
+  } catch (e) {
+    showToast('Invalid YAML: ' + e.message, 'err');
+    return false;
+  }
+  return true;
+}
+
+// ═══════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════
+function initConfigUI() {
+  // Tab switching
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      // If switching from advanced tab, read raw yaml first
+      const activeTab = document.querySelector('.tab-btn.active');
+      if (activeTab && activeTab.dataset.tab === 'advanced') {
+        readRawYaml();
+      }
+      switchTab(btn.dataset.tab);
+    });
+  });
+  
+  // Add camera button
+  document.getElementById('btn-add-cam').addEventListener('click', openAddModal);
+  
+  // Save button
+  document.getElementById('btn-save').addEventListener('click', () => {
+    // Check which tab is active and read data
+    const activeTab = document.querySelector('.tab-btn.active').dataset.tab;
+    if (activeTab === 'general') readGeneralTab();
+    if (activeTab === 'advanced') {
+      if (!readRawYaml()) return;
+    }
+    saveConfig();
+  });
+  
+  // Raw YAML button (shortcut to advanced tab)
+  document.getElementById('btn-raw').addEventListener('click', () => {
+    switchTab('advanced');
+  });
+  
+  // Modal events
+  document.getElementById('modal-close').addEventListener('click', closeCamModal);
+  document.getElementById('modal-cancel').addEventListener('click', closeCamModal);
+  document.getElementById('modal-save').addEventListener('click', saveCamFromModal);
+  
+  // Delete modal
+  document.getElementById('del-close').addEventListener('click', closeDeleteModal);
+  document.getElementById('del-cancel').addEventListener('click', closeDeleteModal);
+  document.getElementById('del-confirm').addEventListener('click', confirmDelete);
+  
+  // Password toggle in modal
+  document.getElementById('pwd-toggle-modal').addEventListener('click', () => {
+    const passInput = document.getElementById('cam-pass');
+    passInput.type = passInput.type === 'password' ? 'text' : 'password';
+  });
+  
+  // Auto-URL generation on input change
+  ['cam-protocol', 'cam-host', 'cam-port', 'cam-path', 'cam-user', 'cam-pass'].forEach(id => {
+    document.getElementById(id).addEventListener('input', updateAutoUrl);
+  });
+  
+  // Protocol change updates default port - preserve path value
+  document.getElementById('cam-protocol').addEventListener('change', () => {
+    const proto = document.getElementById('cam-protocol').value;
+    const portInput = document.getElementById('cam-port');
+    const pathInput = document.getElementById('cam-path');
+    const pathGroup = document.getElementById('path-group');
+    const defaultPort = getDefaultPort(proto);
+    if (defaultPort) portInput.value = defaultPort;
+    // Show/hide path field based on protocol - NEVER clear the value
+    const protocolsWithPath = ['rtsp', 'rtmp', 'http', 'https', 'onvif'];
+    if (protocolsWithPath.includes(proto)) {
+      pathGroup.style.display = '';
+      // Set default path only if completely empty and switching to RTSP
+      if (!pathInput.value.trim() && proto === 'rtsp') {
+        pathInput.value = '/stream1';
+      }
+    } else {
+      pathGroup.style.display = 'none';
+      // Keep the path value even when hidden so it's not lost
+    }
+    updateAutoUrl();
+  });
+  
+  // Close modals on overlay click
+  document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) {
+        overlay.classList.remove('active');
+        if (overlay.id === 'cam-modal') closeCamModal();
+        if (overlay.id === 'del-modal') closeDeleteModal();
+      }
+    });
+  });
+  
+  // ESC to close modals
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('.modal-overlay.active').forEach(m => m.classList.remove('active'));
+      closeCamModal();
+      closeDeleteModal();
+    }
+  });
+  
+  // Load config from server
+  loadConfig();
+}
+
+// ═══ ADMIN PASSWORD + LOGOUT ═══
+document.getElementById('btn-logout').addEventListener('click', async () => {
+await fetch('api/logout', { method: 'POST' });
+location.href = 'index.html';
+});
+document.getElementById('btn-chpass').addEventListener('click', () => {
+document.getElementById('pw-new').value = '';
+document.getElementById('pw-confirm').value = '';
+document.getElementById('pw-modal').classList.add('active');
+});
+document.getElementById('pw-close').addEventListener('click', () => document.getElementById('pw-modal').classList.remove('active'));
+document.getElementById('pw-cancel').addEventListener('click', () => document.getElementById('pw-modal').classList.remove('active'));
+document.getElementById('pw-save').addEventListener('click', async () => {
+const p1 = document.getElementById('pw-new').value;
+const p2 = document.getElementById('pw-confirm').value;
+if (p1.length < 8) { showToast('New password must be at least 8 characters', 'err'); return; }
+if (p1 !== p2) { showToast('Password confirmation does not match', 'err'); return; }
+let adminName = 'GO2RTC_ADMIN_PASS';
+try {
+const lr = await fetch('api/secrets');
+if (lr.ok) {
+const lj = await lr.json();
+const item = (lj.secrets || []).find(x => x.is_admin);
+if (item) adminName = item.name;
+}
+} catch (e) {}
+const r = await fetch('api/secrets', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: adminName, value: p1 }) });
+if (!r.ok) { showToast('Change failed: HTTP ' + r.status, 'err'); return; }
+document.getElementById('pw-modal').classList.remove('active');
+showToast('Password changed — restarting service...', 'ok');
+await fetch('api/restart', { method: 'POST' });
+setTimeout(() => { location.href = 'index.html'; }, 4000);
+});
+// Start
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initConfigUI);
+} else {
+  initConfigUI();
+}
+</script>
+</body>
+</html>
