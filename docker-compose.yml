@@ -1,0 +1,15 @@
+services:
+  go2rtc:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: go2rtc:local
+    container_name: go2rtc
+    restart: unless-stopped
+    ports:
+      - "1984:1984"
+      - "8554:8554"
+      - "8555:8555"
+      - "8555:8555/udp"
+    volumes:
+      - ./config:/config

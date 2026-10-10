@@ -697,8 +697,13 @@ function handleKeyboard(e) {
 
 function toggleSidebar() {
     const sidebar = document.getElementById('nvr-sidebar');
+    if (!sidebar) return;
     if (window.innerWidth <= 768) {
-        sidebar.classList.toggle('mobile-open');
+        if (sidebar.classList.contains('mobile-open')) {
+            closeSidebar();
+        } else {
+            openSidebar();
+        }
     } else {
         sidebar.classList.toggle('collapsed');
         NVR_STATE.sidebarCollapsed = sidebar.classList.contains('collapsed');
@@ -917,24 +922,6 @@ function closeSidebar() {
     sidebar.classList.remove('mobile-open');
     overlay?.classList.remove('active');
 }
-
-// Override toggleSidebar for mobile
-const originalToggleSidebar = window.toggleSidebar || function() {};
-window.toggleSidebar = function() {
-    const sidebar = document.getElementById('nvr-sidebar');
-    
-    if (isMobile()) {
-        if (sidebar.classList.contains('mobile-open')) {
-            closeSidebar();
-        } else {
-            openSidebar();
-        }
-    } else {
-        sidebar.classList.toggle('collapsed');
-        NVR_STATE.sidebarCollapsed = sidebar.classList.contains('collapsed');
-        saveState();
-    }
-};
 
 // ── Camera Selector Bottom Sheet ──
 function showCameraSelector() {
@@ -1226,12 +1213,6 @@ function initMobileFeatures() {
         attributeFilter: ['class']
     });
 }
-
-// ── Update sidebar toggle for mobile ──
-document.getElementById('sidebar-toggle')?.addEventListener('click', (e) => {
-    e.preventDefault();
-    toggleSidebar();
-});
 
 // Call mobile init
 if (document.readyState === 'loading') {
